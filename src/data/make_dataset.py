@@ -13,50 +13,79 @@ import wget
 
 class CorruptMnist(Dataset):
     def __init__(self, input_filepath, output_filepath, train):
+        self.logger = logging.getLogger(__name__)
         self.input_filepath = input_filepath
         self.output_filepath = output_filepath
-        self.download_data(train)
-        if train:
-            content = [ ]
-            for i in range(5):
-                content.append(np.load(os.path.join(input_filepath,f"train_{i}.npz"), allow_pickle=True))
-            data = torch.tensor(np.concatenate([c['images'] for c in content])).reshape(-1, 1, 28, 28)
-            targets = torch.tensor(np.concatenate([c['labels'] for c in content]))
-        else:
-            content = np.load(os.path.join(input_filepath,"test.npz"), allow_pickle=True)
-            data = torch.tensor(content['images']).reshape(-1, 1, 28, 28)
-            targets = torch.tensor(content['labels'])
+
+        if not self.load_data(self.output_filepath): 
+            # Download and/or Process Raw Data            
+            self.download_data(train)
+            if train:
+                content = [ ]
+                for i in range(5):
+                    content.append(np.load(os.path.join(input_filepath,f"train_{i}.npz"), allow_pickle=True))
+                data = torch.tensor(np.concatenate([c['images'] for c in content])).reshape(-1, 1, 28, 28)
+                targets = torch.tensor(np.concatenate([c['labels'] for c in content]))
+            else:
+                content = np.load(os.path.join(input_filepath,"test.npz"), allow_pickle=True)
+                data = torch.tensor(content['images']).reshape(-1, 1, 28, 28)
+                targets = torch.tensor(content['labels'])
             
-        self.data = data
-        self.targets = targets
-    
+            self.data = data
+            self.targets = targets
+            
+            self.process_data(train)
+
     def download_data(self, train):
         files = os.listdir(self.input_filepath)
         if train:
             for file_idx in range(5):
-                if os.path.join(self.input_filepath,f'train_{file_idx}.npy') not in files:
+                if f'train_{file_idx}.npz' not in files:
+                    self.logger.info('raw train data not found in directory...downloading')
                     wget.download(f"https://raw.githubusercontent.com/SkafteNicki/dtu_mlops/main/data/corruptmnist/train_{file_idx}.npz",
                     out = self.input_filepath)
         else:
-            if os.path.join(self.input_filepath,"test.npy") not in files:    
+            if "test.npz" not in files:    
+                self.logger.info('raw test data not found in directory...downloading')
                 wget.download("https://raw.githubusercontent.com/SkafteNicki/dtu_mlops/main/data/corruptmnist/test.npz",
                 out = self.input_filepath)
 
-    def process_data(self):
+    def process_data(self, train):
+        self.logger.info('processing the data')
         # Define a transform to normalize the data
-        transform = transforms.Compose(
-            [transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))]
+        self.transform = transforms.Compose(
+            [transforms.Normalize((0,), (1,))]
         )
 
-        
+        # self.transformed_data = self.transform.apply_transform(self.data)
+        self.transformed_data = torch.stack([self.transform(d) for d in self.data])
 
-    
+        if train:
+            np.save(os.path.join(self.output_filepath, "train_x.npy"), self.transformed_data)
+            np.save(os.path.join(self.output_filepath, "train_y.npy"), self.targets)
+        else:
+            np.save(os.path.join(self.output_filepath, "test_x.npy"), self.transformed_data)
+            np.save(os.path.join(self.output_filepath, "test_y.npy"), self.targets)
+
+    def load_data(self, train):
+        files = os.listdir(self.output_filepath)
+        if train and all(f in files for f in ["train_x.npy","train_y.npy"]):
+            self.data = np.load(os.path.join(self.output_filepath, "train_x.npy"))
+            self.labels = np.load(os.path.join(self.output_filepath, "train_y.npy"))
+            return 1
+        elif not train and all(f in files for f in ["test_x.npy","test_y.npy"]):
+            self.data = np.load(os.path.join(self.output_filepath, "test_x.npy"))
+            self.labels = np.load(os.path.join(self.output_filepath, "test_y.npy"))
+            return 1
+        else:
+            self.logger("processed files not found")
+            return 0
+
     def __len__(self):
         return self.targets.numel()
     
     def __getitem__(self, idx):
         return self.data[idx].float(), self.targets[idx]
-
 
 @click.command()
 @click.argument('input_filepath', type=click.Path(exists=True))
@@ -84,5 +113,3 @@ if __name__ == '__main__':
     load_dotenv(find_dotenv())
 
     main()
-
-    # /Users/invisible_man/Documents/DTU/Courses/MLOps/mlops_handson/mnist_classifier/src/data/make_dataset.py /Users/invisible_man/Documents/DTU/Courses/MLOps/mlops_handson/mnist_classifier/data/raw /Users/invisible_man/Documents/DTU/Courses/MLOps/mlops_handson/mnist_classifier/data/processed

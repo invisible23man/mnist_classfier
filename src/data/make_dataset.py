@@ -20,9 +20,10 @@ class CorruptMnist(Dataset):
         if not self.load_data(self.output_filepath): 
             # Download and/or Process Raw Data            
             self.download_data(train)
+            files = [f for f in os.listdir(self.input_filepath) if f.endswith('.npz') and f.startswith('train')]
             if train:
                 content = [ ]
-                for i in range(5):
+                for i in range(len(files)):
                     content.append(np.load(os.path.join(input_filepath,f"train_{i}.npz"), allow_pickle=True))
                 data = torch.tensor(np.concatenate([c['images'] for c in content])).reshape(-1, 1, 28, 28)
                 targets = torch.tensor(np.concatenate([c['labels'] for c in content]))
@@ -78,7 +79,7 @@ class CorruptMnist(Dataset):
             self.targets = torch.from_numpy(np.load(os.path.join(self.output_filepath, "test_y.npy")))
             return 1
         else:
-            self.logger("processed files not found")
+            self.logger.info("processed files not found")
             return 0
 
     def __len__(self):

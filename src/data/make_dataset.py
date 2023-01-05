@@ -70,12 +70,12 @@ class CorruptMnist(Dataset):
     def load_data(self, train):
         files = os.listdir(self.output_filepath)
         if train and all(f in files for f in ["train_x.npy","train_y.npy"]):
-            self.data = np.load(os.path.join(self.output_filepath, "train_x.npy"))
-            self.labels = np.load(os.path.join(self.output_filepath, "train_y.npy"))
+            self.data = torch.from_numpy(np.load(os.path.join(self.output_filepath, "train_x.npy")))
+            self.targets = torch.from_numpy(np.load(os.path.join(self.output_filepath, "train_y.npy")))
             return 1
         elif not train and all(f in files for f in ["test_x.npy","test_y.npy"]):
-            self.data = np.load(os.path.join(self.output_filepath, "test_x.npy"))
-            self.labels = np.load(os.path.join(self.output_filepath, "test_y.npy"))
+            self.data = torch.from_numpy(np.load(os.path.join(self.output_filepath, "test_x.npy")))
+            self.targets = torch.from_numpy(np.load(os.path.join(self.output_filepath, "test_y.npy")))
             return 1
         else:
             self.logger("processed files not found")

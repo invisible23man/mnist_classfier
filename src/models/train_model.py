@@ -1,10 +1,11 @@
 import argparse
 import sys
+import os
 
 import torch
 
-from data import CorruptMnist
-from model import MyAwesomeModel
+from src.data.make_dataset import CorruptMnist
+from src.models.model import MyAwesomeModel
 
 import matplotlib.pyplot as plt
 
@@ -13,13 +14,36 @@ class TrainOREvaluate(object):
         from a single script
     """
     def __init__(self):
+        parser = argparse.ArgumentParser(
+            description="Script for either training or evaluating",
+            usage="python main.py <command>"
+        )
+        parser.add_argument("command", help="Subcommand to run")
+        args = parser.parse_args(sys.argv[1:2])
+        if not hasattr(self, args.command):
+            print('Unrecognized command')
+            
+            parser.print_help()
+            exit(1)
+        
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = "mps" if torch.backends.mps.is_available() else "cpu"
+            
+        # use dispatch pattern to invoke method with same name
+        getattr(self, args.command)()
                 
     def train(self):
         print("Training day and night")
         parser = argparse.ArgumentParser(description='Training arguments')
         parser.add_argument('--lr', default=1e-3)
+        parser.add_argument('--input_filepath', 
+            default= "/Users/invisible_man/Documents/DTU/Courses/MLOps/mlops_handson/mnist_classifier/data/raw")
+        parser.add_argument('--output_filepath', 
+            default= "/Users/invisible_man/Documents/DTU/Courses/MLOps/mlops_handson/mnist_classifier/data/processed")
+        parser.add_argument('--output_modelpath', 
+            default= "/Users/invisible_man/Documents/DTU/Courses/MLOps/mlops_handson/mnist_classifier/models")
+        parser.add_argument('--output_reportspath', 
+            default= "/Users/invisible_man/Documents/DTU/Courses/MLOps/mlops_handson/mnist_classifier/reports/figures")
         # add any additional argument that you want
         args = parser.parse_args(sys.argv[2:])
         print(args)
@@ -27,7 +51,8 @@ class TrainOREvaluate(object):
         # TODO: Implement training loop here
         model = MyAwesomeModel()
         model = model.to(self.device)
-        train_set = CorruptMnist(train=True)
+        train_set = CorruptMnist(args.input_filepath, args.output_filepath, train=True)
+
         dataloader = torch.utils.data.DataLoader(train_set, batch_size=128)
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
         criterion = torch.nn.CrossEntropyLoss()
@@ -44,19 +69,25 @@ class TrainOREvaluate(object):
                 optimizer.step()
                 loss_tracker.append(loss.item())
             print(f"Epoch {epoch+1}/{n_epoch}. Loss: {loss}")        
-        torch.save(model.state_dict(), 'trained_model.pt')
+        torch.save(model.state_dict(), os.path.join(args.output_modelpath,'trained_model.pt'))
             
         plt.plot(loss_tracker, '-')
         plt.xlabel('Training step')
         plt.ylabel('Training loss')
-        plt.savefig("training_curve.png")
+        plt.savefig(os.path.join(args.output_reportspath,"training_curve.png"))
         
         return model
             
     def evaluate(self):
         print("Evaluating until hitting the ceiling")
         parser = argparse.ArgumentParser(description='Training arguments')
-        parser.add_argument('load_model_from', default="")
+        parser.add_argument('--load_model_from', 
+            default = "/Users/invisible_man/Documents/DTU/Courses/MLOps/mlops_handson/mnist_classifier/models/trained_model.pt")
+        parser.add_argument('--input_filepath', 
+            default= "/Users/invisible_man/Documents/DTU/Courses/MLOps/mlops_handson/mnist_classifier/data/raw")
+        parser.add_argument('--output_filepath', 
+            default= "/Users/invisible_man/Documents/DTU/Courses/MLOps/mlops_handson/mnist_classifier/data/processed")
+           
         # add any additional argument that you want
         args = parser.parse_args(sys.argv[2:])
         print(args)
@@ -66,7 +97,8 @@ class TrainOREvaluate(object):
         model.load_state_dict(torch.load(args.load_model_from))
         model = model.to(self.device)
 
-        test_set = CorruptMnist(train=False)
+        test_set = CorruptMnist(args.input_filepath, args.output_filepath, train=False)
+
         dataloader = torch.utils.data.DataLoader(test_set, batch_size=128)
         
         correct, total = 0, 0

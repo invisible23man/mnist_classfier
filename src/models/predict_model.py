@@ -36,9 +36,9 @@ class Predict(object):
         print("Running Predictions")
         parser = argparse.ArgumentParser(description='Prediction arguments')
         parser.add_argument('--load_model_from', 
-            default = "/Users/invisible_man/Documents/DTU/Courses/MLOps/mlops_handson/mnist_classifier/models/trained_model.pt")
+            default = "./models/trained_model.pt")
         parser.add_argument('--load_data_from', 
-            default= "/Users/invisible_man/Documents/DTU/Courses/MLOps/mlops_handson/mnist_classifier/data")
+            default= "./data")
            
         # add any additional argument that you want
         args = parser.parse_args(sys.argv[2:])

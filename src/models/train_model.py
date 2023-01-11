@@ -37,13 +37,13 @@ class TrainOREvaluate(object):
         parser = argparse.ArgumentParser(description='Training arguments')
         parser.add_argument('--lr', default=1e-3)
         parser.add_argument('--input_filepath', 
-            default= "/Users/invisible_man/Documents/DTU/Courses/MLOps/mlops_handson/mnist_classifier/data/raw")
+            default= "./data/raw")
         parser.add_argument('--output_filepath', 
-            default= "/Users/invisible_man/Documents/DTU/Courses/MLOps/mlops_handson/mnist_classifier/data/processed")
+            default= "./data/processed")
         parser.add_argument('--output_modelpath', 
-            default= "/Users/invisible_man/Documents/DTU/Courses/MLOps/mlops_handson/mnist_classifier/models")
+            default= "./models")
         parser.add_argument('--output_reportspath', 
-            default= "/Users/invisible_man/Documents/DTU/Courses/MLOps/mlops_handson/mnist_classifier/reports/figures")
+            default= "./reports/figures")
         # add any additional argument that you want
         args = parser.parse_args(sys.argv[2:])
         print(args)
@@ -82,11 +82,11 @@ class TrainOREvaluate(object):
         print("Evaluating until hitting the ceiling")
         parser = argparse.ArgumentParser(description='Training arguments')
         parser.add_argument('--load_model_from', 
-            default = "/Users/invisible_man/Documents/DTU/Courses/MLOps/mlops_handson/mnist_classifier/models/trained_model.pt")
+            default = "./models/trained_model.pt")
         parser.add_argument('--input_filepath', 
-            default= "/Users/invisible_man/Documents/DTU/Courses/MLOps/mlops_handson/mnist_classifier/data/raw")
+            default= "./data/raw")
         parser.add_argument('--output_filepath', 
-            default= "/Users/invisible_man/Documents/DTU/Courses/MLOps/mlops_handson/mnist_classifier/data/processed")
+            default= "./data/processed")
            
         # add any additional argument that you want
         args = parser.parse_args(sys.argv[2:])
